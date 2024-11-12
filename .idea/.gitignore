@@ -1,8 +1,33 @@
-# Default ignored files
-/shelf/
-/workspace.xml
-# Editor-based HTTP Client requests
-/httpRequests/
-# Datasource local storage ignored files
-/dataSources/
-/dataSources.local.xml
+# Ignore IDE configuration files (JetBrains IDEs like IntelliJ, WebStorm, etc.)
+.idea/
+*.iml
+shelf/
+workspace.xml
+httpRequests/
+dataSources/
+dataSources.local.xml
+
+# Ignore logs directory
+Logs/
+
+# Ignore .env file for sensitive environment variables
+.env
+
+# Ignore JSON configuration files with sensitive data
+config.json
+
+# Ignore temporary or backup files
+*.tmp
+*.bak
+*.log
+*.swp
+
+# Ignore compiled or generated files
+*.ps1xml
+*.pdb
+*.dll
+
+# Ignore system-specific files (e.g., for macOS and Windows)
+.DS_Store
+Thumbs.db
+desktop.ini

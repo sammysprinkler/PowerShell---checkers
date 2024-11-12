@@ -1,0 +1,72 @@
+{
+  "LogDirectory": "C:\\Users\\skell\\OneDrive - CloudMate, Inc\\Desktop\\Code\\PC Checks\\logs\\",
+  "OutputDirectory": "C:\\Users\\skell\\OneDrive - CloudMate, Inc\\Desktop\\Code\\PC Checks\\",
+
+  "GitHubCredentials": {
+    "Username": "${env:GITHUB_USERNAME}",
+    "Email": "${env:GITHUB_EMAIL}",
+    "Token": "${env:GITHUB_TOKEN}"
+  },
+
+  "UserProfile": {
+    "WindowsUser": "${env:WINDOWS_USER}",
+    "DefaultFilePath": "C:\\Users\\${env:WINDOWS_USER}\\Documents\\",
+    "OneDrivePath": "C:\\Users\\${env:WINDOWS_USER}\\OneDrive - CloudMate, Inc\\"
+  },
+
+  "MonitoredFiles": [
+    "C:\\Windows\\System32\\drivers\\etc\\hosts",
+    "C:\\Windows\\System32\\config\\SAM"
+  ],
+
+  "SuspiciousProcesses": [
+    "nc",
+    "netcat",
+    "ncat",
+    "meterpreter",
+    "powershell",
+    "cmd.exe",
+    "taskmgr.exe",
+    "regedit.exe"
+  ],
+
+  "SuspiciousPorts": [
+    4444,
+    1337,
+    8080,
+    9001,
+    3389,
+    22,
+    23,
+    21
+  ],
+
+  "MaxLogEntries": 100,
+
+  "ErrorKeywords": [
+    "failed password",
+    "error",
+    "unauthorized",
+    "access denied",
+    "login failure",
+    "account locked"
+  ],
+
+  "FileChangeDetection": {
+    "HashAlgorithm": "SHA256",
+    "CheckIntervalMinutes": 60
+  },
+
+  "NetworkMonitoring": {
+    "MaxConnectionsToCheck": 50,
+    "SuspiciousIPAddresses": [
+      "${env:PUBLIC_IP}",
+      "${env:LAN_NETWORK}"
+    ]
+  },
+
+  "SystemChecks": {
+    "ProcessCheckIntervalMinutes": 10,
+    "LogCheckIntervalMinutes": 30
+  }
+}

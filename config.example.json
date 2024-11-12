@@ -1,0 +1,9 @@
+{
+  "LogDirectory": "path/to/logs/",
+  "OutputDirectory": "path/to/output/",
+  "MonitoredFiles": ["path/to/file1", "path/to/file2"],
+  "SuspiciousProcesses": ["process1", "process2"],
+  "SuspiciousPorts": [4444, 8080],
+  "MaxLogEntries": 100,
+  "ErrorKeywords": ["error", "unauthorized"]
+}
