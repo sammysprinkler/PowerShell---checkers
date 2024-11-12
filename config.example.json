@@ -1,9 +1,63 @@
 {
-  "LogDirectory": "path/to/logs/",
-  "OutputDirectory": "path/to/output/",
-  "MonitoredFiles": ["path/to/file1", "path/to/file2"],
-  "SuspiciousProcesses": ["process1", "process2"],
-  "SuspiciousPorts": [4444, 8080],
+  // GitHub credentials (add these to your environment or `.env` file, not here)
+  "GitHubCredentials": {
+    "Username": "${env:GITHUB_USERNAME}",          // Set this in your `.env` file as GITHUB_USERNAME
+    "Email": "${env:GITHUB_EMAIL}",                // Set this in your `.env` file as GITHUB_EMAIL
+    "Token": "${env:GITHUB_TOKEN}"                 // Set this in your `.env` file as GITHUB_TOKEN
+  },
+
+  // System paths (static paths, typically don't need to be changed)
+  "SystemPaths": {
+    "HostsFilePath": "${env:WINDIR}\\System32\\drivers\\etc\\hosts", // Path to the hosts file (standard on Windows)
+    "SAMFilePath": "${env:WINDIR}\\System32\\config\\SAM"           // Path to SAM file (standard on Windows)
+  },
+
+  // Files to monitor (references `SystemPaths`, adjust only if monitoring other files)
+  "MonitoredFiles": [
+    "${config:SystemPaths.HostsFilePath}",
+    "${config:SystemPaths.SAMFilePath}"
+  ],
+
+  // Processes to watch for suspicious activity (add/remove processes as needed)
+  "SuspiciousProcesses": [
+    "nc", "netcat", "ncat", "meterpreter",
+    "powershell", "cmd.exe", "taskmgr.exe",
+    "regedit.exe"
+  ],
+
+  // Ports to monitor (add/remove ports based on your network security policy)
+  "SuspiciousPorts": [
+    4444, 1337, 8080, 9001,
+    3389, 22, 23, 21
+  ],
+
+  // Maximum number of system log entries to check (change as necessary)
   "MaxLogEntries": 100,
-  "ErrorKeywords": ["error", "unauthorized"]
+
+  // Keywords to flag in system logs (customize for specific security monitoring needs)
+  "ErrorKeywords": [
+    "failed password", "error", "unauthorized",
+    "access denied", "login failure", "account locked"
+  ],
+
+  // File change detection settings
+  "FileChangeDetection": {
+    "HashAlgorithm": "SHA256",                   // Choose from "SHA256", "MD5", etc.
+    "CheckIntervalMinutes": 60                   // Time interval to re-check file hashes
+  },
+
+  // Network monitoring settings
+  "NetworkMonitoring": {
+    "MaxConnectionsToCheck": 50,                 // Limit the number of connections to inspect
+    "SuspiciousIPAddresses": [
+      "${env:PUBLIC_IP}",                        // Set this in your `.env` file as PUBLIC_IP
+      "${env:LAN_NETWORK}"                       // Set this in your `.env` file as LAN_NETWORK
+    ]
+  },
+
+  // System checks (intervals for process and log monitoring)
+  "SystemChecks": {
+    "ProcessCheckIntervalMinutes": 10,           // Frequency to re-check processes
+    "LogCheckIntervalMinutes": 30                // Frequency to re-check system logs
+  }
 }
