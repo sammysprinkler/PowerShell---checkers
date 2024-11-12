@@ -1,22 +1,18 @@
 {
-  "LogDirectory": "C:\\Users\\skell\\OneDrive - CloudMate, Inc\\Desktop\\Code\\PC Checks\\logs\\",
-  "OutputDirectory": "C:\\Users\\skell\\OneDrive - CloudMate, Inc\\Desktop\\Code\\PC Checks\\",
-
   "GitHubCredentials": {
     "Username": "${env:GITHUB_USERNAME}",
     "Email": "${env:GITHUB_EMAIL}",
     "Token": "${env:GITHUB_TOKEN}"
   },
 
-  "UserProfile": {
-    "WindowsUser": "${env:WINDOWS_USER}",
-    "DefaultFilePath": "C:\\Users\\${env:WINDOWS_USER}\\Documents\\",
-    "OneDrivePath": "C:\\Users\\${env:WINDOWS_USER}\\OneDrive - CloudMate, Inc\\"
+  "SystemPaths": {
+    "HostsFilePath": "${env:WINDIR}\\System32\\drivers\\etc\\hosts",
+    "SAMFilePath": "${env:WINDIR}\\System32\\config\\SAM"
   },
 
   "MonitoredFiles": [
-    "C:\\Windows\\System32\\drivers\\etc\\hosts",
-    "C:\\Windows\\System32\\config\\SAM"
+    "${config:SystemPaths.HostsFilePath}",
+    "${config:SystemPaths.SAMFilePath}"
   ],
 
   "SuspiciousProcesses": [

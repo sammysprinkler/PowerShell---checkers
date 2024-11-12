@@ -1,9 +1,7 @@
 # EnvLoader.psm1
-# Module to load environment variables from a .env file
-
 function Import-EnvFile {
     param (
-        [string]$envFilePath = "$PSScriptRoot\..\github repo\.env"
+        [string]$envFilePath = "${PSScriptRoot}\..\github repo\.env"
     )
 
     if (Test-Path -Path $envFilePath) {

@@ -1,34 +1,35 @@
-# PowerShell Script: CheckUnauthorizedFileChanges.ps1
-# Description: Monitors specified files for unauthorized changes.
+# CheckUnauthorizedFileChanges.ps1
+# Description: Monitors specified files for unauthorized changes by checking hashes.
 
 # Import necessary modules
-Import-Module "${PSScriptRoot}\..\Modules\EnvLoader.psm1"
 Import-Module "${PSScriptRoot}\..\Modules\ConfigLoader.psm1"
+Import-Module "${PSScriptRoot}\..\Modules\PathLoader.psm1"
+Import-Module "${PSScriptRoot}\..\Modules\EnvLoader.psm1"
 Import-Module "${PSScriptRoot}\..\Modules\Logger.psm1"
 Import-Module "${PSScriptRoot}\..\Modules\FileHasher.psm1"
 
 # Load environment variables
 Import-EnvFile
 
-# Load configuration
-$config = Get-Config
+# Load configurations and paths
+$config = Get-Config -FilePath "${PSScriptRoot}\..\config.json"
+$paths = Get-Paths -FilePath "${PSScriptRoot}\..\paths.json"
 
-# Access configuration settings directly
+# Access paths and configurations
+$LogDirectory = $paths.LogDirectory
 $MonitoredFiles = $config.MonitoredFiles
-$LogDirectory = $config.LogDirectory
+$HashAlgorithm = $config.FileChangeDetection.HashAlgorithm
+
+# Initialize log file
 $Timestamp = (Get-Date -Format "yyyy-MM-dd_HH-mm-ss")
 $OutputFile = Join-Path -Path $LogDirectory -ChildPath "FileChangesCheck_$Timestamp.txt"
-$HashAlgorithm = $config.FileChangeDetection.HashAlgorithm  # Access nested properties directly
 
 # Start file integrity check
 Write-Log -Message "Starting file integrity check..." -LogFilePath $OutputFile -LogLevel "INFO"
 
 foreach ($FilePath in $MonitoredFiles) {
     try {
-        Write-Log -Message "Inspecting file: $FilePath" -LogFilePath $OutputFile -LogLevel "INFO"
-
         if (Test-Path $FilePath) {
-            # Call Get-FileHashString from FileHasher module with correct syntax for the algorithm parameter
             $FileHash = Get-FileHashString -FilePath $FilePath -Algorithm $HashAlgorithm
             Write-Log -Message "Checked $FilePath : Hash $FileHash" -LogFilePath $OutputFile -LogLevel "INFO"
         } else {
