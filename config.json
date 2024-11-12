@@ -10,6 +10,12 @@
     "SAMFilePath": "${env:WINDIR}\\System32\\config\\SAM"
   },
 
+  "Paths": {
+    "LogDirectory": "${env:USERPROFILE}\\PC_Checks\\logs\\",
+    "OutputDirectory": "${env:USERPROFILE}\\PC_Checks\\output\\",
+    "DefaultDocumentsPath": "${env:USERPROFILE}\\Documents\\"
+  },
+
   "MonitoredFiles": [
     "${config:SystemPaths.HostsFilePath}",
     "${config:SystemPaths.SAMFilePath}"
@@ -64,5 +70,10 @@
   "SystemChecks": {
     "ProcessCheckIntervalMinutes": 10,
     "LogCheckIntervalMinutes": 30
+  },
+
+  "Logging": {
+    "DefaultLogLevel": "INFO",
+    "ConsoleOutput": true
   }
 }
