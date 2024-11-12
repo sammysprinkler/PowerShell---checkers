@@ -1,42 +1,42 @@
 # PowerShell Script: CheckUnauthorizedFileChanges.ps1
 # Description: Monitors specified files for unauthorized changes.
 
-$MonitoredFiles = if ($env:OS -eq "Windows_NT") {
-    @("C:\Windows\System32\drivers\etc\hosts")
-} else {
-    @("/etc/passwd", "/etc/shadow")
-}
+# Import necessary modules
+Import-Module "${PSScriptRoot}\..\Modules\EnvLoader.psm1"
+Import-Module "${PSScriptRoot}\..\Modules\ConfigLoader.psm1"
+Import-Module "${PSScriptRoot}\..\Modules\Logger.psm1"
+Import-Module "${PSScriptRoot}\..\Modules\FileHasher.psm1"
+
+# Load environment variables
+Import-EnvFile
+
+# Load configuration
+$config = Get-Config
+
+# Access configuration settings directly
+$MonitoredFiles = $config.MonitoredFiles
+$LogDirectory = $config.LogDirectory
 $Timestamp = (Get-Date -Format "yyyy-MM-dd_HH-mm-ss")
-$OutputFile = "C:\Users\skell\OneDrive - CloudMate, Inc\Desktop\Code\PC Checks\FileChangesCheck_$Timestamp.txt"
+$OutputFile = Join-Path -Path $LogDirectory -ChildPath "FileChangesCheck_$Timestamp.txt"
+$HashAlgorithm = $config.FileChangeDetection.HashAlgorithm  # Access nested properties directly
 
-function Write-Log {
-    param ([string]$Message)
-    $Message | Tee-Object -FilePath $OutputFile -Append
-    Write-Output $Message
-}
-
-function Get-FileHashString {
-    param ([string]$FilePath)
-    return (Get-FileHash -Path $FilePath -Algorithm SHA256).Hash
-}
-
-Write-Log "[$Timestamp] Starting file integrity check..."
+# Start file integrity check
+Write-Log -Message "Starting file integrity check..." -LogFilePath $OutputFile -LogLevel "INFO"
 
 foreach ($FilePath in $MonitoredFiles) {
     try {
-        Write-Log "Inspecting file: $FilePath"
+        Write-Log -Message "Inspecting file: $FilePath" -LogFilePath $OutputFile -LogLevel "INFO"
 
         if (Test-Path $FilePath) {
-            $FileHash = Get-FileHashString -FilePath $FilePath
-            $Message = "Checked $FilePath: Hash $FileHash"
-            Write-Log $Message
+            # Call Get-FileHashString from FileHasher module with correct syntax for the algorithm parameter
+            $FileHash = Get-FileHashString -FilePath $FilePath -Algorithm $HashAlgorithm
+            Write-Log -Message "Checked $FilePath : Hash $FileHash" -LogFilePath $OutputFile -LogLevel "INFO"
         } else {
-            $Message = "Monitored file $FilePath does not exist."
-            Write-Log $Message
+            Write-Log -Message "Monitored file $FilePath does not exist." -LogFilePath $OutputFile -LogLevel "WARNING"
         }
     } catch {
-        Write-Log "Error occurred while inspecting file $FilePath: $_"
+        Write-Log -Message "Error occurred while inspecting file $FilePath : $_" -LogFilePath $OutputFile -LogLevel "ERROR"
     }
 }
 
-Write-Log "[$Timestamp] File integrity check completed."
+Write-Log -Message "File integrity check completed." -LogFilePath $OutputFile -LogLevel "INFO"

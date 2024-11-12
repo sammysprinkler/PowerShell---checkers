@@ -1,29 +1,33 @@
 # PowerShell Script: CheckNetworkConnections.ps1
 # Description: Checks for established network connections on suspicious ports.
 
-$SuspiciousPorts = @(4444, 1337, 8080, 9001)
+# Import necessary modules
+Import-Module "${PSScriptRoot}\..\Modules\EnvLoader.psm1"
+Import-Module "${PSScriptRoot}\..\Modules\ConfigLoader.psm1"
+Import-Module "${PSScriptRoot}\..\Modules\Logger.psm1"
+Import-Module "${PSScriptRoot}\..\Modules\NetworkUtils.psm1"
+
+# Load environment variables
+Import-EnvFile
+
+# Load configuration
+$config = Get-Config
+
+# Use configuration settings
+$SuspiciousPorts = $config.SuspiciousPorts
+$LogDirectory = $config.LogDirectory
 $Timestamp = (Get-Date -Format "yyyy-MM-dd_HH-mm-ss")
-$OutputFile = "C:\Users\skell\OneDrive - CloudMate, Inc\Desktop\Code\PC Checks\NetworkConnectionsCheck_$Timestamp.txt"
+$OutputFile = Join-Path -Path $LogDirectory -ChildPath "NetworkConnectionsCheck_$Timestamp.txt"
 
-function Write-Log {
-    param ([string]$Message)
-    $Message | Tee-Object -FilePath $OutputFile -Append
-    Write-Output $Message
-}
-
-Write-Log "[$Timestamp] Starting network connection check..."
+# Start the network connection check
+Write-Log -Message "Starting network connection check..." -LogFilePath $OutputFile -LogLevel "INFO"
 
 try {
-    Get-NetTCPConnection | ForEach-Object {
-        Write-Log "Inspecting connection: $($_.LocalAddress):$($_.LocalPort) -> $($_.RemoteAddress):$($_.RemotePort) [State: $($_.State)]"
-
-        if ($_.State -eq 'Established' -and $SuspiciousPorts -contains $_.LocalPort) {
-            $Message = "Suspicious connection detected: $($_.LocalAddress):$($_.LocalPort) -> $($_.RemoteAddress):$($_.RemotePort)"
-            Write-Log $Message
-        }
+    Test-SuspiciousPorts -SuspiciousPorts $SuspiciousPorts | ForEach-Object {
+        Write-Log -Message "Suspicious port open: $($_.LocalPort)" -LogFilePath $OutputFile -LogLevel "WARNING"
     }
 } catch {
-    Write-Log "Error occurred while retrieving network connections: $_"
+    Write-Log -Message "Error occurred while checking network connections: $_" -LogFilePath $OutputFile -LogLevel "ERROR"
 }
 
-Write-Log "[$Timestamp] Network connection check completed."
+Write-Log -Message "Network connection check completed." -LogFilePath $OutputFile -LogLevel "INFO"

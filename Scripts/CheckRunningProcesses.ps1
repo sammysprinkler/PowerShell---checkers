@@ -1,30 +1,35 @@
 # PowerShell Script: CheckRunningProcesses.ps1
 # Description: Checks for specific suspicious processes running on the system.
 
-$SuspiciousProcesses = @("nc", "netcat", "ncat", "meterpreter", "powershell", "cmd.exe")
+# Import necessary modules
+Import-Module "${PSScriptRoot}\..\Modules\EnvLoader.psm1"
+Import-Module "${PSScriptRoot}\..\Modules\ConfigLoader.psm1"
+Import-Module "${PSScriptRoot}\..\Modules\Logger.psm1"
+
+# Load environment variables
+Import-EnvFile
+
+# Load configuration
+$config = Get-Config
+
+# Use configuration settings
+$SuspiciousProcesses = $config.SuspiciousProcesses
+$LogDirectory = $config.LogDirectory
 $Timestamp = (Get-Date -Format "yyyy-MM-dd_HH-mm-ss")
-$OutputFile = "C:\Users\skell\OneDrive - CloudMate, Inc\Desktop\Code\PC Checks\RunningProcessesCheck_$Timestamp.txt"
+$OutputFile = Join-Path -Path $LogDirectory -ChildPath "RunningProcessesCheck_$Timestamp.txt"
 
-function Write-Log {
-    param ([string]$Message)
-    $Message | Tee-Object -FilePath $OutputFile -Append
-    Write-Output $Message
-}
-
-Write-Log "[$Timestamp] Starting process check for suspicious activity..."
+# Start process check
+Write-Log -Message "Starting process check for suspicious activity..." -LogFilePath $OutputFile -LogLevel "INFO"
 
 try {
     Get-Process | ForEach-Object {
         $ProcessName = $_.ProcessName.ToLower()
-        Write-Log "Inspecting process: PID $($_.Id) - $($_.ProcessName)"
-
         if ($SuspiciousProcesses -contains $ProcessName) {
-            $Message = "Suspicious process found: PID $($_.Id) - $($_.ProcessName)"
-            Write-Log $Message
+            Write-Log -Message "Suspicious process found: PID $($_.Id) - $($_.ProcessName)" -LogFilePath $OutputFile -LogLevel "WARNING"
         }
     }
 } catch {
-    Write-Log "Error occurred while retrieving processes: $_"
+    Write-Log -Message "Error occurred while retrieving processes: $_" -LogFilePath $OutputFile -LogLevel "ERROR"
 }
 
-Write-Log "[$Timestamp] Process check completed."
+Write-Log -Message "Process check completed." -LogFilePath $OutputFile -LogLevel "INFO"
