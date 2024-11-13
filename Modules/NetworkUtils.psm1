@@ -11,7 +11,7 @@ function Test-PortOpen {
         $connections = Get-NetTCPConnection | Where-Object { $_.LocalPort -eq $Port -and $_.State -eq 'Listen' }
         return $connections
     } catch {
-        throw ("Error checking port {0}: {1}" -f $Port, $_)
+        throw ("Error checking port `${Port}: $_")
     }
 }
 
@@ -22,6 +22,11 @@ function Test-SuspiciousPorts {
         [switch]$ConsoleOutput
     )
 
+    # Expand environment variables in the LogFilePath
+    if ($LogFilePath) {
+        $LogFilePath = [System.Environment]::ExpandEnvironmentVariables($LogFilePath)
+    }
+
     foreach ($Port in $SuspiciousPorts) {
         try {
             # Check if the specified port is open
@@ -29,28 +34,22 @@ function Test-SuspiciousPorts {
             if ($openConnections) {
                 $message = "Suspicious port open: $Port"
 
-                # Log to file if LogFilePath is specified
+                # Log using Write-Log function if available
                 if ($LogFilePath) {
-                    $Timestamp = (Get-Date -Format "yyyy-MM-dd HH:mm:ss")
-                    $FormattedMessage = "[{0}] [WARNING] {1}" -f $Timestamp, $message
-                    $FormattedMessage | Out-File -FilePath $LogFilePath -Append -Encoding UTF8
-                }
-
-                # Optionally output to console
-                if ($ConsoleOutput) {
+                    Write-Log -Message $message -LogFilePath $LogFilePath -LogLevel "WARNING" -ConsoleOutput:$ConsoleOutput
+                } elseif ($ConsoleOutput) {
                     Write-Output $message
                 }
             }
         } catch {
-            # Log and output any error encountered during port checking
-            $errorMessage = ("Error checking suspicious port {0}: {1}" -f $Port, $_)
-            if ($ConsoleOutput) {
-                Write-Output $errorMessage -ForegroundColor Red
-            }
+            # Format the error message with ${} syntax for the $Port variable
+            $errorMessage = "Error checking suspicious port `${Port}: $_"
+
+            # Log the error using Write-Log, or fallback to direct output if not available
             if ($LogFilePath) {
-                $Timestamp = (Get-Date -Format "yyyy-MM-dd HH:mm:ss")
-                $ErrorLogMessage = "[{0}] [ERROR] {1}" -f $Timestamp, $errorMessage
-                $ErrorLogMessage | Out-File -FilePath $LogFilePath -Append -Encoding UTF8
+                Write-Log -Message $errorMessage -LogFilePath $LogFilePath -LogLevel "ERROR" -ConsoleOutput:$ConsoleOutput
+            } elseif ($ConsoleOutput) {
+                Write-Output $errorMessage -ForegroundColor Red
             }
         }
     }

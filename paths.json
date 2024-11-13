@@ -1,5 +1,5 @@
 {
-  "LogDirectory": "${env:USERPROFILE}\\PC_Checks\\logs\\",
-  "OutputDirectory": "${env:USERPROFILE}\\PC_Checks\\output\\",
-  "DefaultDocumentsPath": "${env:USERPROFILE}\\Documents\\"
+  "LogDirectory": "%USERPROFILE%\\PC_Checks\\logs\\",
+  "OutputDirectory": "%USERPROFILE%\\PC_Checks\\output\\",
+  "DefaultDocumentsPath": "%USERPROFILE%\\Documents\\"
 }

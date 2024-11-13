@@ -1,5 +1,5 @@
 # Modules/ConfigLoader.psm1
-# Module for loading configuration files
+# Module for loading and expanding configuration files
 
 function Get-Config {
     param (
@@ -9,19 +9,39 @@ function Get-Config {
     if (Test-Path -Path $FilePath) {
         try {
             # Load JSON config file and convert it to a PowerShell object
-            $config = Get-Content -Path $FilePath | ConvertFrom-Json
+            $config = Get-Content -Path $FilePath -Raw | ConvertFrom-Json
 
-            # Expand any environment variables within the config if any
-            $expandedConfig = [System.Collections.Hashtable]::Synchronized(@{})
-            foreach ($key in $config.PSObject.Properties.Name) {
-                # Check if the value is a string and contains environment variables
-                if ($config.$key -is [string]) {
-                    $expandedConfig[$key] = [Environment]::ExpandEnvironmentVariables($config.$key)
+            # Recursive function to expand environment variables
+            function Expand-VariablesInConfig($item) {
+                if ($item -is [string]) {
+                    # If the item is a string, expand any environment variables
+                    return [Environment]::ExpandEnvironmentVariables($item)
+                } elseif ($item -is [System.Collections.Hashtable] -or $item -is [PSCustomObject]) {
+                    # If the item is a hashtable or custom object, iterate through its properties
+                    $expandedObject = [System.Collections.Hashtable]::Synchronized(@{})
+                    foreach ($property in $item.PSObject.Properties) {
+                        $expandedObject[$property.Name] = Expand-VariablesInConfig($property.Value)
+                    }
+                    return $expandedObject
+                } elseif ($item -is [System.Collections.IEnumerable]) {
+                    # If the item is an array or list, iterate through its elements
+                    $expandedArray = @()
+                    foreach ($element in $item) {
+                        $expandedArray += Expand-VariablesInConfig($element)
+                    }
+                    return $expandedArray
                 } else {
-                    # If it's not a string, just assign it as-is
-                    $expandedConfig[$key] = $config.$key
+                    # Return the item as-is if it does not match any specific type
+                    return $item
                 }
-                Write-Host ("Loaded config for {0}: {1}" -f $key, $expandedConfig[$key])
+            }
+
+            # Expand environment variables in the config
+            $expandedConfig = Expand-VariablesInConfig($config)
+
+            # Output expanded config for debug purposes
+            foreach ($key in $expandedConfig.Keys) {
+                Write-Host ("Loaded and expanded config for {0}: {1}" -f $key, $expandedConfig[$key])
             }
 
             return $expandedConfig
