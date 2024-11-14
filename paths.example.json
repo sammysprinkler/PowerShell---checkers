@@ -1,5 +1,11 @@
 {
-  "LogDirectory": "${env:USERPROFILE}\\PC_Checks\\logs\\",
-  "OutputDirectory": "${env:USERPROFILE}\\PC_Checks\\output\\",
-  "DefaultDocumentsPath": "${env:USERPROFILE}\\Documents\\"
+  // Paths configuration for logs, output, and backups
+  "Paths": {
+    "LogDirectory": "${env:PROJECT_ROOT}\\Logs",                // Directory for all log files
+    "OutputDirectory": "${env:PROJECT_ROOT}\\Output",           // Directory for output data from scripts
+    "BackupDirectory": "${env:PROJECT_ROOT}\\Backup",           // Directory for backup files
+
+    // Additional paths
+    "DefaultDocumentsPath": "${env:USERPROFILE}\\Documents"     // Default path to user's documents folder
+  }
 }

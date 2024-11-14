@@ -12,29 +12,37 @@
     "SAMFilePath": "${env:WINDIR}\\System32\\config\\SAM"           // Path to SAM file (standard on Windows)
   },
 
-  // Files to monitor (references `SystemPaths`, adjust only if monitoring other files)
+  // Paths for logs and output directories (resolved at runtime based on environment variables)
+  "Paths": {
+    "LogDirectory": "${env:PROJECT_ROOT}\\Logs",                    // Path where logs will be stored
+    "OutputDirectory": "${env:PROJECT_ROOT}\\Output",               // Path where output files will be stored
+    "BackupDirectory": "${env:PROJECT_ROOT}\\Backup",               // Path where backups will be stored
+    "DefaultDocumentsPath": "${env:USERPROFILE}\\Documents"         // Default documents path for user profile
+  },
+
+  // Files to monitor for unauthorized changes (references `SystemPaths`, adjust only if monitoring other files)
   "MonitoredFiles": [
     "${config:SystemPaths.HostsFilePath}",
     "${config:SystemPaths.SAMFilePath}"
   ],
 
-  // Processes to watch for suspicious activity (add/remove processes as needed)
+  // List of suspicious processes to watch for (add/remove processes as needed)
   "SuspiciousProcesses": [
     "nc", "netcat", "ncat", "meterpreter",
     "powershell", "cmd.exe", "taskmgr.exe",
     "regedit.exe"
   ],
 
-  // Ports to monitor (add/remove ports based on your network security policy)
+  // List of ports to monitor for suspicious connections (customize based on your network security policy)
   "SuspiciousPorts": [
     4444, 1337, 8080, 9001,
     3389, 22, 23, 21
   ],
 
-  // Maximum number of system log entries to check (change as necessary)
+  // Maximum number of log entries to check in system logs (change as necessary)
   "MaxLogEntries": 100,
 
-  // Keywords to flag in system logs (customize for specific security monitoring needs)
+  // Keywords to search for in system logs, used to flag suspicious entries
   "ErrorKeywords": [
     "failed password", "error", "unauthorized",
     "access denied", "login failure", "account locked"
@@ -43,7 +51,7 @@
   // File change detection settings
   "FileChangeDetection": {
     "HashAlgorithm": "SHA256",                   // Choose from "SHA256", "MD5", etc.
-    "CheckIntervalMinutes": 60                   // Time interval to re-check file hashes
+    "CheckIntervalMinutes": 60                   // Interval to re-check file hashes
   },
 
   // Network monitoring settings
@@ -55,9 +63,15 @@
     ]
   },
 
-  // System checks (intervals for process and log monitoring)
+  // System check intervals
   "SystemChecks": {
     "ProcessCheckIntervalMinutes": 10,           // Frequency to re-check processes
     "LogCheckIntervalMinutes": 30                // Frequency to re-check system logs
+  },
+
+  // Logging configuration
+  "Logging": {
+    "DefaultLogLevel": "INFO",                   // Default logging level: INFO, WARNING, ERROR
+    "ConsoleOutput": true                        // Whether to output logs to console in addition to file
   }
 }
