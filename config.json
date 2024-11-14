@@ -11,8 +11,9 @@
   },
 
   "Paths": {
-    "LogDirectory": "${env:PROJECT_ROOT}\\PC_Checks\\logs",
-    "OutputDirectory": "${env:PROJECT_ROOT}\\PC_Checks\\output",
+    "LogDirectory": "${env:PROJECT_ROOT}\\Logs",
+    "OutputDirectory": "${env:PROJECT_ROOT}\\Output",
+    "BackupDirectory": "${env:PROJECT_ROOT}\\Backup",
     "DefaultDocumentsPath": "${env:USERPROFILE}\\Documents"
   },
 

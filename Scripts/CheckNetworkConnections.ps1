@@ -2,73 +2,95 @@
 # Description: Checks for established network connections on suspicious ports.
 
 # Import necessary modules
-Import-Module "${PSScriptRoot}\..\Modules\ConfigLoader.psm1" -ErrorAction Stop
 Import-Module "${PSScriptRoot}\..\Modules\EnvLoader.psm1" -ErrorAction Stop
+Import-Module "${PSScriptRoot}\..\Modules\ConfigLoader.psm1" -ErrorAction Stop
 Import-Module "${PSScriptRoot}\..\Modules\Logger.psm1" -ErrorAction Stop
-Import-Module "${PSScriptRoot}\..\Modules\NetworkUtils.psm1" -ErrorAction Stop
 
-# Ensure admin privileges
-function Test-Admin {
-    if (-not ([Security.Principal.WindowsPrincipal] [Security.Principal.WindowsIdentity]::GetCurrent()).IsInRole([Security.Principal.WindowsBuiltInRole] "Administrator")) {
-        Write-Host "This script requires administrator privileges. Restarting with elevated permissions..."
-        Start-Process -FilePath "powershell" -ArgumentList "-NoProfile -ExecutionPolicy Bypass -File `"$PSCommandPath`"" -Verb RunAs -Wait
-        exit
-    }
-}
-Test-Admin
-
-# Load environment variables
+# Step 1: Load environment variables
 try {
-    Import-EnvFile
+    if (-not (Import-EnvFile)) {
+        Write-Host "Error: Failed to load environment variables." -ForegroundColor Red
+        exit 1
+    }
     Write-Host "Environment variables loaded successfully."
 } catch {
-    Write-Host "Failed to load environment variables: $_"
+    Write-Host "Error loading environment variables: $_" -ForegroundColor Red
     exit 1
 }
 
-# Load configurations and paths
+# Step 2: Load configurations and paths
 try {
-    $config = Get-Config -FilePath "${PSScriptRoot}\..\config.json"
-    $LogDirectory = $config.Paths.LogDirectory
-    $OutputDirectory = $config.Paths.OutputDirectory
+    # Load configurations from config.json
+    $config = Get-Config -FilePath "${env:PROJECT_ROOT}\config.json"
+    # Load paths from paths.json
+    $paths = Get-Config -FilePath "${env:PROJECT_ROOT}\paths.json"
 
-    Write-Host "Resolved LogDirectory: $LogDirectory"
-    Write-Log -Message "Configurations and paths loaded successfully." -LogFilePath "$LogDirectory\execution.log" -LogLevel "INFO" -ConsoleOutput
-} catch {
-    Write-Host "Error loading configurations or paths: $_"
-    exit 1
-}
+    # Resolve LogDirectory and OutputDirectory paths, expanding any environment variables
+    $LogDirectory = $paths.Paths.LogDirectory -replace '\${env:PROJECT_ROOT}', $env:PROJECT_ROOT
+    $OutputDirectory = $paths.Paths.OutputDirectory -replace '\${env:PROJECT_ROOT}', $env:PROJECT_ROOT
 
-# Ensure log directory exists
-try {
-    if (!(Test-Path -Path $LogDirectory)) {
+    # Ensure directories exist
+    if (-not (Test-Path -Path $LogDirectory)) {
         New-Item -ItemType Directory -Path $LogDirectory -Force | Out-Null
-        Write-Host "Log directory created at $LogDirectory"
-        Write-Log -Message "Log directory created at $LogDirectory" -LogFilePath "$LogDirectory\execution.log" -LogLevel "INFO" -ConsoleOutput
     }
+    if (-not (Test-Path -Path $OutputDirectory)) {
+        New-Item -ItemType Directory -Path $OutputDirectory -Force | Out-Null
+    }
+
+    Write-Host "Log and output directories resolved and ensured to exist."
 } catch {
-    Write-Host "Error creating log directory: $_" -ForegroundColor Red
+    Write-Host "Error loading configurations or paths: $_" -ForegroundColor Red
     exit 1
 }
 
-# Generate log file path with timestamp
-$Timestamp = (Get-Date -Format "yyyy-MM-dd_HH-mm-ss")
-$OutputFile = Join-Path -Path $LogDirectory -ChildPath "NetworkConnectionsCheck_$Timestamp.txt"
-
-# Start network connection check
-Write-Log -Message "Starting network connection check..." -LogFilePath $OutputFile -LogLevel "INFO" -ConsoleOutput
-$SuspiciousPorts = $config.SuspiciousPorts
-
-# Perform network connection check
+# Step 3: Initialize Log File
 try {
+    $Timestamp = (Get-Date -Format "yyyy-MM-dd_HH-mm-ss")
+    $LogFilePath = Join-Path -Path $LogDirectory -ChildPath "NetworkConnectionsCheck_$Timestamp.txt"
+
+    # Check if LogFilePath is set correctly
+    if (-not $LogFilePath) {
+        throw "LogFilePath cannot be null or empty."
+    }
+
+    Write-Host "Log file path set to $LogFilePath"
+} catch {
+    Write-Host "Error initializing log file path: $_" -ForegroundColor Red
+    exit 1
+}
+
+# Step 4: Perform the Network Connection Check
+Write-Log -Message "Starting network connection check..." -LogFilePath $LogFilePath -LogLevel "INFO" -ConsoleOutput
+
+# Access suspicious ports from configuration
+$SuspiciousPorts = $config.SuspiciousPorts
+Write-Log -Message "Checking for connections on suspicious ports: $($SuspiciousPorts -join ', ')" -LogFilePath $LogFilePath -LogLevel "INFO" -ConsoleOutput
+
+# Check for established connections on suspicious ports
+try {
+    $connectionsChecked = 0
+    $suspiciousConnections = 0
+
     Get-NetTCPConnection | ForEach-Object {
+        $connectionsChecked++
+        $connectionDetails = "LocalPort: $($_.LocalPort), RemoteAddress: $($_.RemoteAddress), State: $($_.State)"
+
+        # Log each connection
+        Write-Log -Message "Checking connection: $connectionDetails" -LogFilePath $LogFilePath -LogLevel "INFO" -ConsoleOutput
+
+        # If connection matches suspicious criteria, log as warning
         if ($_.State -eq 'Established' -and $SuspiciousPorts -contains $_.LocalPort) {
-            $message = "Suspicious connection detected: LocalPort $($_.LocalPort), RemoteAddress $($_.RemoteAddress)"
-            Write-Log -Message $message -LogFilePath $OutputFile -LogLevel "WARNING" -ConsoleOutput
+            $suspiciousConnections++
+            Write-Log -Message "Suspicious connection detected: $connectionDetails" -LogFilePath $LogFilePath -LogLevel "WARNING" -ConsoleOutput
         }
     }
+
+    Write-Log -Message "Total connections checked: $connectionsChecked" -LogFilePath $LogFilePath -LogLevel "INFO" -ConsoleOutput
+    Write-Log -Message "Total suspicious connections detected: $suspiciousConnections" -LogFilePath $LogFilePath -LogLevel "INFO" -ConsoleOutput
 } catch {
-    Write-Log -Message ("Error checking network connections: {0}" -f $_) -LogFilePath $OutputFile -LogLevel "ERROR" -ConsoleOutput
+    Write-Log -Message "Error during network check: $_" -LogFilePath $LogFilePath -LogLevel "ERROR" -ConsoleOutput
+    exit 1
 }
 
-Write-Log -Message "Network connection check completed." -LogFilePath $OutputFile -LogLevel "INFO" -ConsoleOutput
+# Final log entry indicating completion
+Write-Log -Message "Network connection check completed." -LogFilePath $LogFilePath -LogLevel "INFO" -ConsoleOutput

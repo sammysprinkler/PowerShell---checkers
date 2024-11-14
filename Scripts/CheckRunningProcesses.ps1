@@ -1,39 +1,41 @@
 # CheckRunningProcesses.ps1
 # Description: Checks for running processes that match a list of suspicious processes.
 
-# Import necessary modules
-Import-Module "${PSScriptRoot}\..\Modules\ConfigLoader.psm1"
-Import-Module "${PSScriptRoot}\..\Modules\PathLoader.psm1"
-Import-Module "${PSScriptRoot}\..\Modules\EnvLoader.psm1"
-Import-Module "${PSScriptRoot}\..\Modules\Logger.psm1"
+# Import Main module for core initialization
+Import-Module "${PSScriptRoot}\..\Modules\Main.psm1" -ErrorAction Stop
 
-# Load environment variables
-Import-EnvFile
+# Initialize core environment (environment variables, configurations, paths)
+try {
+    Initialize-CoreEnvironment
+} catch {
+    Write-Host "Initialization failed: $_" -ForegroundColor Red
+    exit 1
+}
 
-# Load configurations and paths
-$config = Get-Config -FilePath "${PSScriptRoot}\..\config.json"
-$paths = Get-Paths -FilePath "${PSScriptRoot}\..\paths.json"
+# Ensure that LogFilePath is available
+if (-not $global:LogFilePath) {
+    Write-Host "Error: LogFilePath is not set. Unable to log messages." -ForegroundColor Red
+    exit 1
+}
 
-# Access paths and configurations
-$LogDirectory = $paths.LogDirectory
-$SuspiciousProcesses = $config.SuspiciousProcesses
+# Access suspicious processes from configuration
+$SuspiciousProcesses = $global:Config.SuspiciousProcesses
 
-# Initialize log file
-$Timestamp = (Get-Date -Format "yyyy-MM-dd_HH-mm-ss")
-$OutputFile = Join-Path -Path $LogDirectory -ChildPath "RunningProcessesCheck_$Timestamp.txt"
+# Log start of process check
+Write-Log -Message "Starting process check for suspicious activity..." -LogFilePath $global:LogFilePath -LogLevel "INFO" -ConsoleOutput
 
-# Start process check
-Write-Log -Message "Starting process check for suspicious activity..." -LogFilePath $OutputFile -LogLevel "INFO"
-
+# Perform process check and log results
 try {
     Get-Process | ForEach-Object {
         $ProcessName = $_.ProcessName.ToLower()
         if ($SuspiciousProcesses -contains $ProcessName) {
-            Write-Log -Message "Suspicious process found: PID $($_.Id) - $($_.ProcessName)" -LogFilePath $OutputFile -LogLevel "WARNING"
+            $message = "Suspicious process found: PID $($_.Id) - $($_.ProcessName)"
+            Write-Log -Message $message -LogFilePath $global:LogFilePath -LogLevel "WARNING" -ConsoleOutput
         }
     }
 } catch {
-    Write-Log -Message "Error occurred while checking processes: $_" -LogFilePath $OutputFile -LogLevel "ERROR"
+    Write-Log -Message "Error occurred while checking processes: $_" -LogFilePath $global:LogFilePath -LogLevel "ERROR" -ConsoleOutput
 }
 
-Write-Log -Message "Process check completed." -LogFilePath $OutputFile -LogLevel "INFO"
+# Log completion of process check
+Write-Log -Message "Process check completed." -LogFilePath $global:LogFilePath -LogLevel "INFO" -ConsoleOutput
