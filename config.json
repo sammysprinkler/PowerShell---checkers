@@ -1,24 +1,24 @@
 {
   "GitHubCredentials": {
-    "Username": "%GITHUB_USERNAME%",
-    "Email": "%GITHUB_EMAIL%",
-    "Token": "%GITHUB_TOKEN%"
+    "Username": "${env:GITHUB_USERNAME}",
+    "Email": "${env:GITHUB_EMAIL}",
+    "Token": "${env:GITHUB_TOKEN}"
   },
 
   "SystemPaths": {
-    "HostsFilePath": "%WINDIR%\\System32\\drivers\\etc\\hosts",
-    "SAMFilePath": "%WINDIR%\\System32\\config\\SAM"
+    "HostsFilePath": "${env:WINDIR}\\System32\\drivers\\etc\\hosts",
+    "SAMFilePath": "${env:WINDIR}\\System32\\config\\SAM"
   },
 
   "Paths": {
-    "LogDirectory": "%USERPROFILE%\\PC_Checks\\logs\\",
-    "OutputDirectory": "%USERPROFILE%\\PC_Checks\\output\\",
-    "DefaultDocumentsPath": "%USERPROFILE%\\Documents\\"
+    "LogDirectory": "${env:PROJECT_ROOT}\\PC_Checks\\logs",
+    "OutputDirectory": "${env:PROJECT_ROOT}\\PC_Checks\\output",
+    "DefaultDocumentsPath": "${env:USERPROFILE}\\Documents"
   },
 
   "MonitoredFiles": [
-    "%WINDIR%\\System32\\drivers\\etc\\hosts",
-    "%WINDIR%\\System32\\config\\SAM"
+    "${env:WINDIR}\\System32\\drivers\\etc\\hosts",
+    "${env:WINDIR}\\System32\\config\\SAM"
   ],
 
   "SuspiciousProcesses": [
@@ -62,8 +62,8 @@
   "NetworkMonitoring": {
     "MaxConnectionsToCheck": 50,
     "SuspiciousIPAddresses": [
-      "%PUBLIC_IP%",
-      "%LAN_NETWORK%"
+      "${env:PUBLIC_IP}",
+      "${env:LAN_NETWORK}"
     ]
   },
 

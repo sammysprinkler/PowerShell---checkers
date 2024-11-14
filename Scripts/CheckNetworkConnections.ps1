@@ -3,21 +3,18 @@
 
 # Import necessary modules
 Import-Module "${PSScriptRoot}\..\Modules\ConfigLoader.psm1" -ErrorAction Stop
-Import-Module "${PSScriptRoot}\..\Modules\PathLoader.psm1" -ErrorAction Stop
 Import-Module "${PSScriptRoot}\..\Modules\EnvLoader.psm1" -ErrorAction Stop
 Import-Module "${PSScriptRoot}\..\Modules\Logger.psm1" -ErrorAction Stop
 Import-Module "${PSScriptRoot}\..\Modules\NetworkUtils.psm1" -ErrorAction Stop
 
-# Check if the script is running with administrator privileges
+# Ensure admin privileges
 function Test-Admin {
     if (-not ([Security.Principal.WindowsPrincipal] [Security.Principal.WindowsIdentity]::GetCurrent()).IsInRole([Security.Principal.WindowsBuiltInRole] "Administrator")) {
-        Write-Host "This script requires administrator privileges. Please run as administrator."
-        Start-Process -FilePath "powershell" -ArgumentList "-File `"$PSCommandPath`"" -Verb RunAs
+        Write-Host "This script requires administrator privileges. Restarting with elevated permissions..."
+        Start-Process -FilePath "powershell" -ArgumentList "-NoProfile -ExecutionPolicy Bypass -File `"$PSCommandPath`"" -Verb RunAs -Wait
         exit
     }
 }
-
-# Call Test-Admin to ensure script is running with admin privileges
 Test-Admin
 
 # Load environment variables
@@ -32,11 +29,11 @@ try {
 # Load configurations and paths
 try {
     $config = Get-Config -FilePath "${PSScriptRoot}\..\config.json"
-    $paths = Get-Paths -FilePath "${PSScriptRoot}\..\paths.json"
+    $LogDirectory = $config.Paths.LogDirectory
+    $OutputDirectory = $config.Paths.OutputDirectory
 
-    # Use expanded log directory path
-    $LogDirectory = $paths.LogDirectory
-    Write-Host "Configurations and paths loaded successfully."
+    Write-Host "Resolved LogDirectory: $LogDirectory"
+    Write-Log -Message "Configurations and paths loaded successfully." -LogFilePath "$LogDirectory\execution.log" -LogLevel "INFO" -ConsoleOutput
 } catch {
     Write-Host "Error loading configurations or paths: $_"
     exit 1
@@ -47,6 +44,7 @@ try {
     if (!(Test-Path -Path $LogDirectory)) {
         New-Item -ItemType Directory -Path $LogDirectory -Force | Out-Null
         Write-Host "Log directory created at $LogDirectory"
+        Write-Log -Message "Log directory created at $LogDirectory" -LogFilePath "$LogDirectory\execution.log" -LogLevel "INFO" -ConsoleOutput
     }
 } catch {
     Write-Host "Error creating log directory: $_" -ForegroundColor Red
@@ -57,13 +55,11 @@ try {
 $Timestamp = (Get-Date -Format "yyyy-MM-dd_HH-mm-ss")
 $OutputFile = Join-Path -Path $LogDirectory -ChildPath "NetworkConnectionsCheck_$Timestamp.txt"
 
-# Log the start of the network connection check
+# Start network connection check
 Write-Log -Message "Starting network connection check..." -LogFilePath $OutputFile -LogLevel "INFO" -ConsoleOutput
-
-# Get list of suspicious ports from the config
 $SuspiciousPorts = $config.SuspiciousPorts
 
-# Perform the network connection check
+# Perform network connection check
 try {
     Get-NetTCPConnection | ForEach-Object {
         if ($_.State -eq 'Established' -and $SuspiciousPorts -contains $_.LocalPort) {
@@ -72,8 +68,7 @@ try {
         }
     }
 } catch {
-    Write-Log -Message ("Error occurred while checking network connections: {0}" -f $_) -LogFilePath $OutputFile -LogLevel "ERROR" -ConsoleOutput
+    Write-Log -Message ("Error checking network connections: {0}" -f $_) -LogFilePath $OutputFile -LogLevel "ERROR" -ConsoleOutput
 }
 
-# Log the completion of the network connection check
 Write-Log -Message "Network connection check completed." -LogFilePath $OutputFile -LogLevel "INFO" -ConsoleOutput
