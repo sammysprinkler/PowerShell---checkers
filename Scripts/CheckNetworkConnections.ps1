@@ -20,22 +20,15 @@ try {
 
 # Step 2: Load configurations and paths
 try {
-    # Load configurations from config.json
     $config = Get-Config -FilePath "${env:PROJECT_ROOT}\config.json"
-    # Load paths from paths.json
     $paths = Get-Config -FilePath "${env:PROJECT_ROOT}\paths.json"
 
-    # Resolve LogDirectory and OutputDirectory paths, expanding any environment variables
     $LogDirectory = $paths.Paths.LogDirectory -replace '\${env:PROJECT_ROOT}', $env:PROJECT_ROOT
     $OutputDirectory = $paths.Paths.OutputDirectory -replace '\${env:PROJECT_ROOT}', $env:PROJECT_ROOT
 
     # Ensure directories exist
-    if (-not (Test-Path -Path $LogDirectory)) {
-        New-Item -ItemType Directory -Path $LogDirectory -Force | Out-Null
-    }
-    if (-not (Test-Path -Path $OutputDirectory)) {
-        New-Item -ItemType Directory -Path $OutputDirectory -Force | Out-Null
-    }
+    if (-not (Test-Path -Path $LogDirectory)) { New-Item -ItemType Directory -Path $LogDirectory -Force | Out-Null }
+    if (-not (Test-Path -Path $OutputDirectory)) { New-Item -ItemType Directory -Path $OutputDirectory -Force | Out-Null }
 
     Write-Host "Log and output directories resolved and ensured to exist."
 } catch {
@@ -48,49 +41,64 @@ try {
     $Timestamp = (Get-Date -Format "yyyy-MM-dd_HH-mm-ss")
     $LogFilePath = Join-Path -Path $LogDirectory -ChildPath "NetworkConnectionsCheck_$Timestamp.txt"
 
-    # Check if LogFilePath is set correctly
     if (-not $LogFilePath) {
         throw "LogFilePath cannot be null or empty."
     }
-
     Write-Host "Log file path set to $LogFilePath"
 } catch {
     Write-Host "Error initializing log file path: $_" -ForegroundColor Red
     exit 1
 }
 
+# Header with environment and configuration info
+Write-Log -Message "==== Network Connection Check Report ====" -LogLevel "INFO" -LogFilePath $LogFilePath
+Write-Log -Message "Date: $(Get-Date)" -LogLevel "INFO" -LogFilePath $LogFilePath
+Write-Log -Message "Environment: User - $env:USERPROFILE | Hostname - $env:COMPUTERNAME" -LogLevel "INFO" -LogFilePath $LogFilePath
+Write-Log -Message "Suspicious Ports: $($config.SuspiciousPorts -join ', ')" -LogLevel "INFO" -LogFilePath $LogFilePath
+Write-Log -Message "========================================" -LogLevel "INFO" -LogFilePath $LogFilePath
+
 # Step 4: Perform the Network Connection Check
-Write-Log -Message "Starting network connection check..." -LogFilePath $LogFilePath -LogLevel "INFO" -ConsoleOutput
+Write-Log -Message "Starting network connection check..." -LogLevel "INFO" -LogFilePath $LogFilePath
 
-# Access suspicious ports from configuration
-$SuspiciousPorts = $config.SuspiciousPorts
-Write-Log -Message "Checking for connections on suspicious ports: $($SuspiciousPorts -join ', ')" -LogFilePath $LogFilePath -LogLevel "INFO" -ConsoleOutput
+# Initialize counters and log suspicious connections separately for easy reference
+$suspiciousConnections = 0
+$totalConnectionsChecked = 0
+$suspiciousDetails = @()
 
-# Check for established connections on suspicious ports
 try {
-    $connectionsChecked = 0
-    $suspiciousConnections = 0
-
     Get-NetTCPConnection | ForEach-Object {
-        $connectionsChecked++
+        $totalConnectionsChecked++
         $connectionDetails = "LocalPort: $($_.LocalPort), RemoteAddress: $($_.RemoteAddress), State: $($_.State)"
 
-        # Log each connection
-        Write-Log -Message "Checking connection: $connectionDetails" -LogFilePath $LogFilePath -LogLevel "INFO" -ConsoleOutput
+        # Log each connection checked
+        Write-Log -Message "Checking connection: $connectionDetails" -LogLevel "INFO" -LogFilePath $LogFilePath
 
-        # If connection matches suspicious criteria, log as warning
-        if ($_.State -eq 'Established' -and $SuspiciousPorts -contains $_.LocalPort) {
+        # Check if connection matches suspicious criteria
+        if ($_.State -eq 'Established' -and $config.SuspiciousPorts -contains $_.LocalPort) {
             $suspiciousConnections++
-            Write-Log -Message "Suspicious connection detected: $connectionDetails" -LogFilePath $LogFilePath -LogLevel "WARNING" -ConsoleOutput
+            $suspiciousDetails += "Suspicious connection detected: $connectionDetails"
         }
     }
 
-    Write-Log -Message "Total connections checked: $connectionsChecked" -LogFilePath $LogFilePath -LogLevel "INFO" -ConsoleOutput
-    Write-Log -Message "Total suspicious connections detected: $suspiciousConnections" -LogFilePath $LogFilePath -LogLevel "INFO" -ConsoleOutput
+    # Summarize suspicious connections if any found
+    if ($suspiciousConnections -gt 0) {
+        Write-Log -Message "==== Suspicious Connections Detected ====" -LogLevel "WARNING" -LogFilePath $LogFilePath
+        foreach ($detail in $suspiciousDetails) {
+            Write-Log -Message $detail -LogLevel "WARNING" -LogFilePath $LogFilePath
+        }
+    } else {
+        Write-Log -Message "No suspicious connections detected." -LogLevel "INFO" -LogFilePath $LogFilePath
+    }
+
+    # Summary of findings
+    Write-Log -Message "==== Summary of Network Connection Check ====" -LogLevel "INFO" -LogFilePath $LogFilePath
+    Write-Log -Message "Total Connections Checked: $totalConnectionsChecked" -LogLevel "INFO" -LogFilePath $LogFilePath
+    Write-Log -Message "Total Suspicious Connections Detected: $suspiciousConnections" -LogLevel ($suspiciousConnections -gt 0 ? "WARNING" : "INFO") -LogFilePath $LogFilePath
+
 } catch {
-    Write-Log -Message "Error during network check: $_" -LogFilePath $LogFilePath -LogLevel "ERROR" -ConsoleOutput
+    Write-Log -Message "Error during network check: $_" -LogLevel "ERROR" -LogFilePath $LogFilePath
     exit 1
 }
 
 # Final log entry indicating completion
-Write-Log -Message "Network connection check completed." -LogFilePath $LogFilePath -LogLevel "INFO" -ConsoleOutput
+Write-Log -Message "Network connection check completed." -LogLevel "INFO" -LogFilePath $LogFilePath
