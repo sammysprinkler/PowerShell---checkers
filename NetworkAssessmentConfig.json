@@ -1,0 +1,47 @@
+{
+  "LogDirectory": "${env:PROJECT_ROOT}\\Logs\\",
+  "OutputDirectory": "${env:PROJECT_ROOT}\\Output\\",
+
+  "DnsTunnelingDetection": {
+    "Enabled": true,
+    "Threshold": 100,
+    "LogDetails": true
+  },
+
+  "SshTunnelingDetection": {
+    "Enabled": true,
+    "NonStandardPortThreshold": 1024,
+    "LogDetails": true
+  },
+
+  "TcpSessionAnalysis": {
+    "Enabled": true,
+    "HijackingIndicators": ["FA"],
+    "LogDetails": true
+  },
+
+  "AttackSignatureDetection": {
+    "Enabled": true,
+    "SynFloodThreshold": 100,
+    "UdpFloodThreshold": 1024,
+    "SlowlorisThreshold": 100,
+    "LogDetails": true
+  },
+
+  "KeywordScanning": {
+    "Enabled": true,
+    "Keywords": ["password", "login", "admin", "root", "credit", "malware"],
+    "LogDetails": true
+  },
+
+  "ProtocolScanning": {
+    "Enabled": true,
+    "Protocols": ["TCP", "UDP", "DNS", "HTTP", "SMTP", "SMB"],
+    "MaxConnectionsToCheck": 50
+  },
+
+  "Ipv6FragmentationDetection": {
+    "Enabled": true,
+    "FragmentSizeThreshold": 1500
+  }
+}
