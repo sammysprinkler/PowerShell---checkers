@@ -1,0 +1,27 @@
+Summary of All Files to Create or Adjust
+File/Directory	Description
+NetworkAssessmentConfig.json	Configuration for network assessment settings and parameters.
+.env	Environment variables for sensitive data and network details.
+Modules/	PowerShell modules for core and detection-specific functions.
+- DnsTunnelingDetector.psm1	Functions to detect DNS tunneling.
+- SshTunnelingDetector.psm1	Functions to detect SSH tunneling.
+- TcpSessionAnalyzer.psm1	Functions for TCP session analysis.
+- AttackSignatureDetector.psm1	Functions to detect attack signatures.
+- KeywordScanner.psm1	Functions to scan for keywords.
+- ProtocolScanner.psm1	Functions for protocol-specific scanning.
+Scripts/	PowerShell scripts for main assessment and individual checks.
+- NetworkAssessment.ps1	Main orchestration script for network assessment.
+- CheckDnsTunneling.ps1	Script to check for DNS tunneling.
+- CheckSshTunneling.ps1	Script to check for SSH tunneling.
+- AnalyzeTcpSessions.ps1	Script to analyze TCP sessions.
+- DetectAttackSignatures.ps1	Script to detect known attack patterns.
+- ScanForKeywords.ps1	Script to scan for suspicious keywords.
+- ProtocolSpecificScan.ps1	Script to scan specific protocols.
+Test/	PowerShell test scripts for modules and detection scripts.
+- RunAllTests.ps1	Main script to run all tests.
+- TestDnsTunnelingDetector.ps1	Tests DNS tunneling detection module.
+- TestSshTunnelingDetector.ps1	Tests SSH tunneling detection module.
+- TestTcpSessionAnalyzer.ps1	Tests TCP session analysis module.
+- TestAttackSignatureDetector.ps1	Tests attack signature detection module.
+- TestKeywordScanner.ps1	Tests keyword scanning module.
+- TestProtocolScanner.ps1	Tests protocol scanning module.
